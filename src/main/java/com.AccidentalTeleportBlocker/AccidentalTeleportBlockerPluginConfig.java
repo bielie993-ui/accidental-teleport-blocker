@@ -7,6 +7,8 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
 {
     enum ModifierKey { CTRL, SHIFT }
 
+
+
     // ─────────────────────── General Settings ───────────────────────
     @ConfigSection(
             name = "General settings",
@@ -16,11 +18,23 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
     String generalSettingsSection = "generalSettings";
 
     @ConfigItem(
+            keyName = "",
+            name = "<html><div style='width:171px; text-align:center; color: white'>"
+                    + "Use SHIFT + RIGHT-CLICK on any teleport spell in any spellbook to start blocking specific teleports!<br>"
+                    + "</div></html>",
+            description = "",
+            position = 0,
+            section = generalSettingsSection
+    )
+    default void generalExplanationLabel() {
+    }
+
+    @ConfigItem(
             keyName = "enableModifierKey",
             name = "Require modifier key",
             description = "Allow pressing a modifier key to bypass the block",
             section = generalSettingsSection,
-            position = 0
+            position = 1
     )
     default boolean enableModifierKey() { return true; }
 
@@ -29,7 +43,7 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
             name = "Modifier key",
             description = "Hold this key while left clicking to teleport",
             section = generalSettingsSection,
-            position = 1
+            position = 2
     )
     default ModifierKey modifierKey() { return ModifierKey.CTRL; }
 
@@ -38,7 +52,7 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
             name = "Allow right-click casting",
             description = "If enabled, casting from the right-click menu is always allowed",
             section = generalSettingsSection,
-            position = 2
+            position = 3
     )
     default boolean allowRightClickWithoutModifier() { return true; }
 
@@ -49,6 +63,18 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
             position = 1
     )
     String activationSection = "activationDelay";
+
+    @ConfigItem(
+            keyName = "",
+            name = "<html><div style='width:171px; text-align:center; color: white'>"
+                    + "Use SHIFT + RIGHT-CLICK on any non-teleport spell in any spellbook to add a trigger!<br>"
+                    + "</div></html>",
+            description = "",
+            position = 0,
+            section = activationSection
+    )
+    default void spellActivationExplanationLabel() {
+    }
 
     @ConfigItem(
             keyName = "enableSpellTriggerList",
@@ -62,7 +88,7 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
     @ConfigItem(
             keyName = "customTriggerSpells",
             name = "Spell list",
-            description = "Comma-separated list of spell names that will trigger the block delay window",
+            description = "Comma-separated list of spell names that will trigger the block delay window. Can also be modified through the spellbook shift + right-click menu.",
             section = activationSection,
             position = 2
     )
