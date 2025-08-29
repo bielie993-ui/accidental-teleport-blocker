@@ -43,11 +43,9 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
     private volatile boolean ctrlDown = false;
     private volatile boolean shiftDown = false;
     private volatile Instant lastAlchemyCastAt = null;
-    private volatile Instant lastOffensiveCastAt = null;
 
     private static final int ANIM_LOW_ALCH = 712;
     private static final int ANIM_HIGH_ALCH = 713;
-//    private static final int[] ANIM_OFFENSIVE = {711, 9144, 11429, 9145, 10091, 10092};
     private static final String BLOCKED_TELEPORTS_KEY_PREFIX = "blockedTeleports_";
 
     private final Map<String, Set<String>> blockedTeleportsPerSpellbook = new HashMap<>();
@@ -89,7 +87,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         ctrlDown = false;
         shiftDown = false;
         lastAlchemyCastAt = null;
-//        lastOffensiveCastAt = null;
         blockedTeleportsPerSpellbook.clear();
     }
 
@@ -118,7 +115,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
     @Subscribe
     public void onAnimationChanged(AnimationChanged e) {
-//        if (!config.enableAfterAlchDelay() && !config.enableAfterOffensiveDelay()) {
         if (!config.enableAfterAlchDelay()) {
             return;
         }
@@ -135,12 +131,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
             lastAlchemyCastAt = Instant.now();
         }
 
-//        for (int offensiveAnim : ANIM_OFFENSIVE) {
-//            if (config.enableAfterOffensiveDelay() && anim == offensiveAnim) {
-//                lastOffensiveCastAt = Instant.now();
-//                break;
-//            }
-//        }
     }
 
     @Subscribe
@@ -207,22 +197,18 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
             return;
         }
 
-        boolean shouldBlockAfterAlch = false;
-        if (config.enableAfterAlchDelay() && lastAlchemyCastAt != null) {
-            long sinceAlch = Duration.between(lastAlchemyCastAt, Instant.now()).getSeconds();
-            shouldBlockAfterAlch = sinceAlch <= config.activationDelaySeconds();
-        }
+        boolean shouldBlockAfterAlch = true;
+        if (config.enableAfterAlchDelay()) {
+            if (lastAlchemyCastAt != null) {
+                long sinceAlch = Duration.between(lastAlchemyCastAt, Instant.now()).getSeconds();
+                shouldBlockAfterAlch = sinceAlch <= config.activationDelaySeconds();
+            } else {
+                shouldBlockAfterAlch = false;
+            }
 
-//        boolean shouldBlockAfterOffensive = false;
-//        if (config.enableAfterOffensiveDelay() && lastOffensiveCastAt != null) {
-//            long sinceOffensiveSpell = Duration.between(lastOffensiveCastAt, Instant.now()).getSeconds();
-//            System.out.println("im here: " + sinceOffensiveSpell + " " + config.activationDelaySeconds());
-//            shouldBlockAfterOffensive = sinceOffensiveSpell <= config.activationDelaySeconds();
-//        }
-
-//        if (!shouldBlockAfterAlch && !shouldBlockAfterOffensive) {
-        if (!shouldBlockAfterAlch) {
-            return;
+            if (!shouldBlockAfterAlch) {
+                return;
+            }
         }
 
         if (!config.enableModifierKey()) {
@@ -250,21 +236,13 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
             event.consume();
             String blockedMessage = "Hold " + keyName + " to use this teleport";
 
-            if (shouldBlockAfterAlch) {
+            if (config.enableAfterAlchDelay() && lastAlchemyCastAt != null) {
                 long sinceAlch = Duration.between(lastAlchemyCastAt, Instant.now()).getSeconds();
                 long remainingAlch = config.activationDelaySeconds() - sinceAlch;
                 if (remainingAlch >= 0) {
                     blockedMessage += getSecondsMessage((int) remainingAlch);
                 }
             }
-//
-//            if (shouldBlockAfterOffensive) {
-//                long sinceOffensive = Duration.between(lastOffensiveCastAt, Instant.now()).getSeconds();
-//                long remainingOffensive = config.activationDelaySeconds() - sinceOffensive;
-//                if (remainingOffensive >= 0) {
-//                    blockedMessage += getSecondsMessage((int) remainingOffensive);
-//                }
-//            }
 
             blockedMessage += "!";
             client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", blockedMessage, null);
