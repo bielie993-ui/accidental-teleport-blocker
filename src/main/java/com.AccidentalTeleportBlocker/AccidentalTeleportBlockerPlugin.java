@@ -158,7 +158,9 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
     /**
      * Handles menu entry additions - adds "Enable/Disable block" options to teleport spells
+     * and "Block Trigger" options to non-teleport spells
      * This runs when right-click menus are being built, allowing users to toggle blocking per teleport
+     * and manually add non-teleport spells to the trigger list
      * Only shows these options when SHIFT is held down to avoid cluttering the menu
      */
     @Subscribe
@@ -167,16 +169,16 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
         String option = event.getOption();
         String target = event.getTarget();
+        String spellName = getSpellNameFromTarget(target);
 
-        // Check if this is a teleport spell being cast
-        if (isTeleportSpellOption(target) && (option.equals("Cast"))) {
-            String teleport = getSpellNameFromTarget(target);
-            String baseTeleport = getBaseTeleportName(teleport);
+        if (isTeleportSpellOption(target)) {
+            // Handle teleport spells - existing functionality
+            String baseTeleport = getBaseTeleportName(spellName);
             boolean blocked = isBlockedTeleport(baseTeleport);
 
             String menuText = blocked ? "Disable block" : "Enable block";
 
-            // Add our custom menu entry
+            // Add our custom menu entry for teleports
             client.createMenuEntry(-1)
                     .setOption(menuText)
                     .setTarget(target)
@@ -190,6 +192,24 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
                         }
                         saveBlockedTeleports(); // Persist the change
                     });
+        } else if (option.equals("Cast")) {
+            loadCustomTriggerSpells();
+
+            boolean isAlreadyTrigger = customTriggerSpells.contains(spellName);
+            String menuText = isAlreadyTrigger ? "Remove block trigger" : "Add block trigger";
+
+            client.createMenuEntry(-1)
+                    .setOption(menuText)
+                    .setTarget(target)
+                    .setType(MenuAction.RUNELITE)
+                    .onClick(e -> {
+                        if (isAlreadyTrigger) {
+                            removeFromCustomTriggerSpells(spellName);
+                        } else {
+                            addToCustomTriggerSpells(spellName);
+                        }
+                    });
+
         }
     }
 
@@ -451,5 +471,47 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
     @Provides
     AccidentalTeleportBlockerPluginConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(AccidentalTeleportBlockerPluginConfig.class);
+    }
+
+    /**
+     * Adds a spell to the custom trigger spells list if it's not already present
+     * Automatically saves the updated list to the configuration in alphabetical order
+     *
+     * @param spellName The name of the spell to add
+     */
+    private void addToCustomTriggerSpells(String spellName) {
+        // Ignore empty or duplicate entries
+        if (spellName == null || spellName.trim().isEmpty() || customTriggerSpells.contains(spellName)) {
+            return;
+        }
+
+        customTriggerSpells.add(spellName.trim().toLowerCase());
+
+        // Sort the spells alphabetically and update the configuration
+        String updatedSpellList = customTriggerSpells.stream()
+                .sorted()
+                .collect(java.util.stream.Collectors.joining(", "));
+        configManager.setConfiguration("AccidentalTeleportBlocker", "customTriggerSpells", updatedSpellList);
+    }
+
+    /**
+     * Removes a spell from the custom trigger spells list if it exists
+     * Automatically saves the updated list to the configuration in alphabetical order
+     *
+     * @param spellName The name of the spell to remove
+     */
+    private void removeFromCustomTriggerSpells(String spellName) {
+        // Ignore empty entries
+        if (spellName == null || spellName.trim().isEmpty()) {
+            return;
+        }
+
+        customTriggerSpells.remove(spellName.trim().toLowerCase());
+
+        // Sort the spells alphabetically and update the configuration
+        String updatedSpellList = customTriggerSpells.stream()
+                .sorted()
+                .collect(java.util.stream.Collectors.joining(", "));
+        configManager.setConfiguration("AccidentalTeleportBlocker", "customTriggerSpells", updatedSpellList);
     }
 }
