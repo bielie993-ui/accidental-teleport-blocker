@@ -42,40 +42,40 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
     )
     default boolean allowRightClickWithoutModifier() { return true; }
 
-    // ─────────────────────── Block window after alch ───────────────────────
+    // ─────────────────────── Spell activation settings ───────────────────────
     @ConfigSection(
-            name = "Block windows",
-            description = "Only block teleports for X seconds after casting a spell from a specific spell group",
+            name = "Spell activation settings",
+            description = "Settings to only block teleports after casting certain spells",
             position = 1
     )
     String activationSection = "activationDelay";
 
     @ConfigItem(
-            keyName = "enableAfterAlchDelay",
-            name = "Alchemy Spells",
-            description = "When enabled, teleports are only blocked if you cast any alchemy spell within the last X seconds",
+            keyName = "enableSpellTriggerList",
+            name = "Enable trigger list",
+            description = "When enabled, teleports are only blocked if you cast any spell from the custom list within the last X seconds.",
             section = activationSection,
-            position = 0
+            position = 1
     )
-    default boolean enableAfterAlchDelay() { return false; }
+    default boolean enableCustomTriggerSpells() { return false; }
 
-//    @ConfigItem(
-//            keyName = "enableAfterOffensiveDelay",
-//            name = "Offensive Spells",
-//            description = "When enabled, teleports are only blocked if you cast any offensive spell within the last X seconds.",
-//            section = activationSection,
-//            position = 1
-//    )
-//    default boolean enableAfterOffensiveDelay() { return false; }
+    @ConfigItem(
+            keyName = "customTriggerSpells",
+            name = "Spell list",
+            description = "Comma-separated list of spell names that will trigger the block delay window",
+            section = activationSection,
+            position = 2
+    )
+    default String customTriggerSpells() { return "high level alchemy, low level alchemy"; }
 
     @Range(min = 1, max = 600)
     @Units(Units.SECONDS)
     @ConfigItem(
             keyName = "activationDelaySeconds",
-            name = "Block window length",
+            name = "Unblock delay",
             description = "How long should teleports be blocked for after a cast?",
             section = activationSection,
-            position = 2
+            position = 3
     )
     default int activationDelaySeconds() { return 5; }
 }
