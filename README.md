@@ -11,3 +11,11 @@ This idea came from the frustration of accidentally teleporting while trying to 
 
 ### Future ideas
 - Add windows for other spells.
+
+### Printscreens
+
+![screenshot](https://i.imgur.com/W83bQnE.png)
+
+![screenshot](https://i.imgur.com/z55AMUu.png)
+
+![screenshot](https://i.imgur.com/IgdKJ2t.png)
