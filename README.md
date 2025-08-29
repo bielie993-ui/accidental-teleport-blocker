@@ -1,4 +1,4 @@
-# Accidental Teleport Block
+# Accidental Teleport Blocker
 A simple plugin which blocks teleports to prevent accidental teleports while casting other spells in any spellbook. The block can be overruled by pressing a modifier key.
 
 This idea came from the frustration of accidentally teleporting while trying to cast high alchemy or manually casting other spells.
