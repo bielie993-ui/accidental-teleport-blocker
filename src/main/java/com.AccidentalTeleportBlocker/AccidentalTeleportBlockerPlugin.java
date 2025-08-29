@@ -4,8 +4,10 @@ import com.google.inject.Provides;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
+import net.runelite.api.Skill;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.events.StatChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyListener;
@@ -55,6 +57,8 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
     private volatile boolean ctrlDown = false;
     private volatile boolean shiftDown = false;
     private volatile Instant lastCustomSpellCastAt = null;
+
+    private volatile String pendingSpellName = null;
 
     private static final String BLOCKED_TELEPORTS_KEY_PREFIX = "blockedTeleports_";
 
@@ -178,19 +182,17 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
             String menuText = blocked ? "Disable block" : "Enable block";
 
-            // Add our custom menu entry for teleports
             client.createMenuEntry(-1)
                     .setOption(menuText)
                     .setTarget(target)
                     .setType(MenuAction.RUNELITE)
                     .onClick(e -> {
-                        // Toggle the blocked status when clicked
                         if (blocked) {
                             unblockTeleport(baseTeleport);
                         } else {
                             blockTeleport(baseTeleport);
                         }
-                        saveBlockedTeleports(); // Persist the change
+                        saveBlockedTeleports();
                     });
         } else if (option.equals("Cast")) {
             loadCustomTriggerSpells();
@@ -213,20 +215,16 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         }
     }
 
-    /**
-     * Main event handler for menu option clicks
-     * Handles both tracking custom spell casting and blocking teleport usage
-     */
     @Subscribe
     public void onMenuOptionClicked(MenuOptionClicked event) {
         String option = event.getMenuOption();
         String target = event.getMenuTarget();
 
-        // Track when custom trigger spells are cast to start the block delay window
-        if (config.enableCustomTriggerSpells() && option.equals("Cast")) {
-            String spellName = getSpellNameFromTarget(target);
-            if (isCustomTriggerSpell(spellName)) {
-                lastCustomSpellCastAt = Instant.now();
+        if (config.enableCustomTriggerSpells()) {
+            if (option.equals("Cast")) {
+                pendingSpellName = getSpellNameFromTarget(target);
+            } else {
+                pendingSpellName = null;
             }
         }
 
@@ -335,6 +333,18 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         }
     }
 
+    @Subscribe
+    public void onStatChanged(StatChanged event) {
+        // Check if a custom trigger spell was just cast and if any magic xp was gained (not 100% accurate but close enough)
+        if (pendingSpellName != null && event.getSkill() == Skill.MAGIC) {
+            if (isCustomTriggerSpell(pendingSpellName)) {
+                lastCustomSpellCastAt = Instant.now();
+            }
+
+            pendingSpellName = null;
+        }
+    }
+
     private String getSecondsMessage(Integer remaining, String prefix) {
         String secondsString = " seconds";
 
@@ -362,6 +372,7 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
                 spellName.contains(triggerSpell) || triggerSpell.contains(spellName)
         );
     }
+
 
     private String getCurrentSpellbook() {
         int spellbookVar = client.getVarbitValue(4070); // Spellbook varbit from the game
@@ -473,12 +484,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         return configManager.getConfig(AccidentalTeleportBlockerPluginConfig.class);
     }
 
-    /**
-     * Adds a spell to the custom trigger spells list if it's not already present
-     * Automatically saves the updated list to the configuration in alphabetical order
-     *
-     * @param spellName The name of the spell to add
-     */
     private void addToCustomTriggerSpells(String spellName) {
         // Ignore empty or duplicate entries
         if (spellName == null || spellName.trim().isEmpty() || customTriggerSpells.contains(spellName)) {
@@ -494,12 +499,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         configManager.setConfiguration("AccidentalTeleportBlocker", "customTriggerSpells", updatedSpellList);
     }
 
-    /**
-     * Removes a spell from the custom trigger spells list if it exists
-     * Automatically saves the updated list to the configuration in alphabetical order
-     *
-     * @param spellName The name of the spell to remove
-     */
     private void removeFromCustomTriggerSpells(String spellName) {
         // Ignore empty entries
         if (spellName == null || spellName.trim().isEmpty()) {
