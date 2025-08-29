@@ -52,7 +52,7 @@ public interface AccidentalTeleportBlockerPluginConfig extends Config
 
     @ConfigItem(
             keyName = "enableSpellTriggerList",
-            name = "Enable trigger list",
+            name = "Enable spell list",
             description = "When enabled, teleports are only blocked if you cast any spell from the custom list within the last X seconds.",
             section = activationSection,
             position = 1
