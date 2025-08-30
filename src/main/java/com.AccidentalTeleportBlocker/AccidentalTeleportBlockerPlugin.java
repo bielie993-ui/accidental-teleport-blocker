@@ -26,6 +26,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 30-08-2025 - Nobodycalled - Initial release
+ * 31-08-2025 - Nobodycalled - Added support for custom trigger spells
+ *
  * RuneLite plugin that prevents accidental teleport usage by requiring a modifier key
  * or by only blocking teleports for a limited time after casting specific trigger spells.
  * Features:
@@ -112,10 +115,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         customTriggerSpells.clear();
     }
 
-    /**
-     * Loads the blocked teleports configuration from persistent storage
-     * Initializes the blocked teleports map for each spellbook
-     */
     private void loadBlockedTeleports() {
         for (String spellbook : new String[]{STANDARD_SPELLBOOK, ANCIENT_SPELLBOOK, LUNAR_SPELLBOOK, ARCEUUS_SPELLBOOK}) {
             String blocked = configManager.getConfiguration("AccidentalTeleportBlocker", BLOCKED_TELEPORTS_KEY_PREFIX + spellbook);
@@ -131,10 +130,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         }
     }
 
-    /**
-     * Loads the list of custom trigger spells from the plugin configuration
-     * These spells will trigger the block delay window when cast
-     */
     private void loadCustomTriggerSpells() {
         customTriggerSpells.clear();
         String spellList = config.customTriggerSpells();
@@ -147,10 +142,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         }
     }
 
-    /**
-     * Saves the current blocked teleports configuration to persistent storage
-     * This ensures the user's preferences are preserved between sessions
-     */
     private void saveBlockedTeleports() {
         for (Map.Entry<String, Set<String>> entry : blockedTeleportsPerSpellbook.entrySet()) {
             String spellbook = entry.getKey();
@@ -160,13 +151,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         }
     }
 
-    /**
-     * Handles menu entry additions - adds "Enable/Disable block" options to teleport spells
-     * and "Block Trigger" options to non-teleport spells
-     * This runs when right-click menus are being built, allowing users to toggle blocking per teleport
-     * and manually add non-teleport spells to the trigger list
-     * Only shows these options when SHIFT is held down to avoid cluttering the menu
-     */
     @Subscribe
     public void onMenuEntryAdded(MenuEntryAdded event) {
         if (!shiftDown) return;
@@ -249,12 +233,11 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
             return;
         }
 
-        // Only block actual spell casting (left-click on spells)
         if (event.getMenuAction() != MenuAction.CC_OP && event.getMenuAction() != MenuAction.CC_OP_LOW_PRIORITY) {
             return;
         }
 
-        // Only process blocked teleports
+        // Don't process un-blocked teleports
         if (!isBlockedTeleportTarget(target)) {
             return;
         }
@@ -359,6 +342,7 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
     private boolean isTeleportSpellOption(String target) {
         String tgt = target.toLowerCase().replaceAll("<.*?>", "").replaceAll("[^a-z ]", "").trim();
+
         return tgt.contains("teleport") || tgt.contains("tele group");
     }
 
@@ -368,6 +352,7 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
     private boolean isCustomTriggerSpell(String spellName) {
         loadCustomTriggerSpells();
+
         return customTriggerSpells.stream().anyMatch(triggerSpell ->
                 spellName.contains(triggerSpell) || triggerSpell.contains(spellName)
         );
@@ -376,6 +361,7 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
     private String getCurrentSpellbook() {
         int spellbookVar = client.getVarbitValue(4070); // Spellbook varbit from the game
+
         switch (spellbookVar) {
             case 1:
                 return ANCIENT_SPELLBOOK;
@@ -396,12 +382,12 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
             return false;
         }
 
-        // Check direct match first
+        // Direct match
         if (spellbookBlockedTeleports.contains(baseTeleport)) {
             return true;
         }
 
-        // Check if any grouped teleports are blocked
+        // Grouped teleports
         return TELEPORT_GROUPS.entrySet().stream()
                 .anyMatch(entry -> {
                     boolean keyBlocked = spellbookBlockedTeleports.contains(entry.getKey());
@@ -413,6 +399,7 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
     private void blockTeleport(String baseTeleport) {
         String currentSpellbook = getCurrentSpellbook();
         Set<String> spellbookBlockedTeleports = blockedTeleportsPerSpellbook.get(currentSpellbook);
+
         if (spellbookBlockedTeleports != null) {
             spellbookBlockedTeleports.add(baseTeleport);
         }
@@ -421,6 +408,7 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
     private void unblockTeleport(String baseTeleport) {
         String currentSpellbook = getCurrentSpellbook();
         Set<String> spellbookBlockedTeleports = blockedTeleportsPerSpellbook.get(currentSpellbook);
+
         if (spellbookBlockedTeleports != null) {
             spellbookBlockedTeleports.remove(baseTeleport);
         }
