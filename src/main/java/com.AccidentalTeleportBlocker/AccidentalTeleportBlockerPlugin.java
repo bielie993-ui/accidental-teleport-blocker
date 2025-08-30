@@ -360,7 +360,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         );
     }
 
-
     private String getCurrentSpellbook() {
         int spellbookVar = client.getVarbitValue(4070); // Spellbook varbit from the game
 
