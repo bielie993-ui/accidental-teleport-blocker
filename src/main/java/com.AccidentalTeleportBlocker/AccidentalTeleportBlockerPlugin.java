@@ -1,23 +1,17 @@
 package com.AccidentalTeleportBlocker;
 
 import com.google.inject.Provides;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.MenuAction;
-import net.runelite.api.Skill;
+import net.runelite.api.*;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.input.KeyListener;
-import net.runelite.client.input.KeyManager;
 import net.runelite.client.menus.MenuManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
 import javax.inject.Inject;
-import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -40,13 +34,10 @@ import java.util.Set;
 @PluginDescriptor(
         name = "Accidental Teleport Blocker"
 )
-public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListener {
+public class AccidentalTeleportBlockerPlugin extends Plugin {
 
     @Inject
     private Client client;
-
-    @Inject
-    private KeyManager keyManager;
 
     @Inject
     private AccidentalTeleportBlockerPluginConfig config;
@@ -98,14 +89,12 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
     @Override
     protected void startUp() {
-        keyManager.registerKeyListener(this);
         loadBlockedTeleports();
         loadCustomTriggerSpells();
     }
 
     @Override
     protected void shutDown() {
-        keyManager.unregisterKeyListener(this);
 
         ctrlDown = false;
         shiftDown = false;
@@ -289,12 +278,12 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
 
         switch (config.modifierKey()) {
             case SHIFT:
-                modifierHeld = shiftDown;
+                modifierHeld = client.isKeyPressed(KeyCode.KC_SHIFT);
                 keyName = "SHIFT";
                 break;
             case CTRL:
             default:
-                modifierHeld = ctrlDown;
+                modifierHeld = client.isKeyPressed(KeyCode.KC_CONTROL);
                 keyName = "CTRL";
                 break;
         }
@@ -437,35 +426,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
                     boolean containsTarget = entry.getValue().stream().anyMatch(lowerTarget::contains);
                     return keyBlocked && containsTarget;
                 });
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_CONTROL:
-                ctrlDown = true;
-                break;
-            case KeyEvent.VK_SHIFT:
-                shiftDown = true;
-                break;
-        }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_CONTROL:
-                ctrlDown = false;
-                break;
-            case KeyEvent.VK_SHIFT:
-                shiftDown = false;
-                break;
-        }
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-        // Not used
     }
 
     @Provides
