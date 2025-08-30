@@ -48,8 +48,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin {
     @Inject
     private MenuManager menuManager;
 
-    private volatile boolean ctrlDown = false;
-    private volatile boolean shiftDown = false;
     private volatile Instant lastCustomSpellCastAt = null;
 
     private volatile String pendingSpellName = null;
@@ -96,8 +94,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin {
     @Override
     protected void shutDown() {
 
-        ctrlDown = false;
-        shiftDown = false;
         lastCustomSpellCastAt = null;
 
         blockedTeleportsPerSpellbook.clear();
@@ -142,7 +138,7 @@ public class AccidentalTeleportBlockerPlugin extends Plugin {
 
     @Subscribe
     public void onMenuEntryAdded(MenuEntryAdded event) {
-        if (!shiftDown) return;
+        if (!client.isKeyPressed(KeyCode.KC_SHIFT)) return;
 
         String option = event.getOption();
         String target = event.getTarget();
