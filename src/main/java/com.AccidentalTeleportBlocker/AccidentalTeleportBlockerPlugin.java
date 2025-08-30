@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  * 30-08-2025 - Nobodycalled - Initial release
  * 31-08-2025 - Nobodycalled - Added support for custom trigger spells
- *
+ * <p>
  * RuneLite plugin that prevents accidental teleport usage by requiring a modifier key
  * or by only blocking teleports for a limited time after casting specific trigger spells.
  * Features:
@@ -159,14 +159,17 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
         String target = event.getTarget();
         String spellName = getSpellNameFromTarget(target);
 
-        if (isTeleportSpellOption(target)) {
-            // Handle teleport spells - existing functionality
+        if (!option.equals("Cast")) {
+            return;
+        }
+
+        if (isTeleportSpellOption(target)) { // Teleport spells
             String baseTeleport = getBaseTeleportName(spellName);
             boolean blocked = isBlockedTeleport(baseTeleport);
 
             String menuText = blocked ? "Disable block" : "Enable block";
 
-            client.createMenuEntry(-1)
+            client.getMenu().createMenuEntry(-1)
                     .setOption(menuText)
                     .setTarget(target)
                     .setType(MenuAction.RUNELITE)
@@ -178,13 +181,13 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
                         }
                         saveBlockedTeleports();
                     });
-        } else if (option.equals("Cast")) {
+        } else { // All other spells
             loadCustomTriggerSpells();
 
             boolean isAlreadyTrigger = customTriggerSpells.contains(spellName);
             String menuText = isAlreadyTrigger ? "Remove block trigger" : "Add block trigger";
 
-            client.createMenuEntry(-1)
+            client.getMenu().createMenuEntry(-1)
                     .setOption(menuText)
                     .setTarget(target)
                     .setType(MenuAction.RUNELITE)
@@ -195,7 +198,6 @@ public class AccidentalTeleportBlockerPlugin extends Plugin implements KeyListen
                             addToCustomTriggerSpells(spellName);
                         }
                     });
-
         }
     }
 
